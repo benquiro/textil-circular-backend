@@ -18,6 +18,9 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 
     List<Message> findByConversationIdOrderBySentAtAscIdAsc(Long conversationId);
 
+    /** Catch-up after a reconnect: only what the app does not have yet, still oldest first. */
+    List<Message> findByConversationIdAndIdGreaterThanOrderBySentAtAscIdAsc(Long conversationId, Long afterId);
+
     /** Marks as read what the other participant sent; refuses readers outside the conversation. */
     default int markReadBy(Conversation conversation, UserAccount reader, Instant now) {
         conversation.requireParticipant(reader);
