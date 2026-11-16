@@ -66,7 +66,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ForbiddenException.class)
     ProblemDetail forbidden(ForbiddenException e) {
-        return Problems.of(HttpStatus.FORBIDDEN, "FORBIDDEN", e.getMessage());
+        return Problems.of(HttpStatus.FORBIDDEN, e.getCode(), e.getMessage());
     }
 
     @ExceptionHandler(NotFoundException.class)
@@ -90,6 +90,10 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return switch (constraint == null ? "" : constraint) {
             case "uk_user_account_email" -> conflict(AccountErrors.emailTaken());
             case "uk_entrepreneur_rut" -> conflict(AccountErrors.rutTaken());
+            case "uk_message_client_uuid" -> conflict(new ConflictException("MESSAGE_ID_CONFLICT",
+                    "Ese identificador de mensaje ya fue usado"));
+            case "uk_conversation_report_open" -> conflict(new ConflictException("REPORT_ALREADY_OPEN",
+                    "Ya tienes un reporte abierto en esta conversación"));
             default -> Problems.of(HttpStatus.CONFLICT, "CONFLICT",
                     "Los datos cambiaron mientras guardabas. Inténtalo de nuevo");
         };
