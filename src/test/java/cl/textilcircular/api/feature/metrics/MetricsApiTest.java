@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** {@code GET /admin/metrics}: real counts, windows and filters, with the previous window for comparison. */
+/** {@code GET /admin/metrics}: conteos reales, ventanas y filtros, con la ventana anterior para comparar. */
 @ApiTest
 class MetricsApiTest {
 
@@ -95,7 +95,7 @@ class MetricsApiTest {
         return new Session(created.access(), created.userId(), businessId);
     }
 
-    /** The review feature is outside this slice; metrics only need the business to be usable. */
+    /** La funcionalidad de revisión queda fuera de este alcance; las métricas solo necesitan que el negocio sea utilizable. */
     void publish(long businessId) {
         jdbc.update("update business set status = 'APPROVED', approved_at = now() where business_id = ?", businessId);
     }
@@ -127,7 +127,7 @@ class MetricsApiTest {
                 .andExpect(status().isCreated());
     }
 
-    /** Puts the conversation's last activity in the requested window. */
+    /** Sitúa la última actividad de la conversación en la ventana solicitada. */
     void movedDaysAgo(long conversationId, int days) throws Exception {
         Timestamp at = Timestamp.from(Instant.now().minus(Duration.ofDays(days)));
         jdbc.update("update message set sent_at = ? where conversation_id = ?", at, conversationId);
@@ -135,9 +135,9 @@ class MetricsApiTest {
     }
 
     /**
-     * E1 (region 1, service 1) is 10 days old, E2 (region 7, service 2) 45 days, E3 100 days.
-     * C1 registered 5 days ago, C2 50 days and C3 100 days. Conversations: one per customer and
-     * business, with two that got an answer and two that did not.
+     * E1 (región 1, servicio 1) tiene 10 días, E2 (región 7, servicio 2) 45 días y E3 100 días.
+     * C1 se registró hace 5 días, C2 hace 50 días y C3 hace 100 días. Conversaciones: una por cliente y
+     * negocio, con dos que recibieron respuesta y dos que no.
      */
     Fixture fixture() throws Exception {
         String admin = admin();

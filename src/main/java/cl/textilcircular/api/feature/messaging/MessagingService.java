@@ -40,7 +40,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/** Inbox, message history, sending, read receipts, blocking and reports. */
+/** Bandeja, historial de mensajes, envío, confirmaciones de lectura, bloqueo y reportes. */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -86,9 +86,9 @@ class MessagingService {
     }
 
     /**
-     * A retry with the same {@code clientUuid} and sender returns the stored message with 200; the
-     * same uuid from someone else is a conflict. The block guard runs before the lookup, so a
-     * blocked conversation never accepts a send, retried or not.
+     * Un reintento con el mismo {@code clientUuid} y remitente devuelve el mensaje guardado con 200;
+     * el mismo uuid usado por otra persona es un conflicto. La verificación de bloqueo se ejecuta antes
+     * de la búsqueda, así que una conversación bloqueada nunca acepta un envío, sea reintento o no.
      */
     SendResult send(Caller caller, long conversationId, SendMessageRequest request) {
         UserAccount user = activeAccount(caller);
@@ -182,7 +182,7 @@ class MessagingService {
                 : null;
     }
 
-    /** A token can outlive its account's status: suspended or deactivated accounts are refused here. */
+    /** Un token puede sobrevivir al estado de su cuenta: aquí se rechazan las cuentas suspendidas o desactivadas. */
     private UserAccount activeAccount(Caller caller) {
         UserAccount account = accounts.findById(caller.userId())
                 .filter(a -> a.getStatus() != AccountStatus.DELETED)

@@ -18,20 +18,21 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 
     List<Message> findByConversationIdOrderBySentAtAscIdAsc(Long conversationId);
 
-    /** Catch-up after a reconnect: only what the app does not have yet, still oldest first. */
+    /** Puesta al día tras una reconexión: solo lo que la aplicación aún no tiene, igualmente lo más antiguo primero. */
     List<Message> findByConversationIdAndIdGreaterThanOrderBySentAtAscIdAsc(Long conversationId, Long afterId);
 
-    /** Marks as read what the other participant sent; refuses readers outside the conversation. */
+    /** Marca como leído lo que envió el otro participante; rechaza lectores ajenos a la conversación. */
     default int markReadBy(Conversation conversation, UserAccount reader, Instant now) {
         conversation.requireParticipant(reader);
         return markUnreadFromOthers(conversation.getId(), reader.getId(), now);
     }
 
     /**
-     * Low-level update behind {@link #markReadBy}; does not check participation. {@code read_at}
-     * is never earlier than {@code sent_at}, even if the sender's clock was ahead. The persistence
-     * context is not cleared, so entities the caller already holds stay managed; a Message already
-     * loaded in this transaction keeps its old {@code readAt} until refreshed.
+     * Actualización de bajo nivel detrás de {@link #markReadBy}; no verifica la participación.
+     * {@code read_at} nunca es anterior a {@code sent_at}, aunque el reloj del emisor estuviera
+     * adelantado. El contexto de persistencia no se limpia, por lo que las entidades que el
+     * llamador ya mantiene siguen gestionadas; un Message ya cargado en esta transacción
+     * conserva su {@code readAt} anterior hasta que se recargue.
      */
     @Modifying(flushAutomatically = true)
     @Query("""
@@ -40,7 +41,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
             """)
     int markUnreadFromOthers(Long conversationId, Long readerId, Instant now);
 
-    /** Total unread messages for the navigation badge. */
+    /** Total de mensajes sin leer para el contador de la navegación. */
     @Query("""
             select count(m) from Message m join m.conversation c join c.business b
             where m.readAt is null and m.sender.id <> :userId

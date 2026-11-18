@@ -27,8 +27,8 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Chat between a customer and a business. The participants are the customer who started it and
- * the business owner; nobody else can read, send or mark messages.
+ * Chat entre un cliente y un negocio. Los participantes son el cliente que lo inició y el dueño
+ * del negocio; nadie más puede leer, enviar ni marcar mensajes.
  */
 @Getter
 @Entity
@@ -56,7 +56,7 @@ public class Conversation extends BaseEntity {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    /** Set while a participant keeps the conversation blocked for both sides. */
+    /** Se establece mientras un participante mantiene la conversación bloqueada para ambas partes. */
     @Column(name = "blocked_at")
     private Instant blockedAt;
 
@@ -65,8 +65,8 @@ public class Conversation extends BaseEntity {
     private UserAccount blockedBy;
 
     /**
-     * A customer contacts a business of the directory. Callers first look for the existing
-     * thread ({@code findByInitiatorIdAndBusinessId}) and reuse it.
+     * Un cliente contacta a un negocio del directorio. El llamador busca primero el hilo
+     * existente ({@code findByInitiatorIdAndBusinessId}) y lo reutiliza.
      */
     public static Conversation start(UserAccount customer, Business business, Instant now) {
         customer.ensureActive();
@@ -84,8 +84,8 @@ public class Conversation extends BaseEntity {
     }
 
     /**
-     * New message from a participant. Idempotency is the caller's job and happens after this
-     * participant check: look up {@code clientUuid} and use {@link Message#isRetryBy}.
+     * Mensaje nuevo de un participante. La idempotencia es tarea del llamador y ocurre después
+     * de esta verificación de participación: buscar {@code clientUuid} y usar {@link Message#isRetryBy}.
      */
     public Message send(UserAccount sender, UUID clientUuid, String content, Product product, Instant now) {
         ensureCanSend(sender);
@@ -97,7 +97,7 @@ public class Conversation extends BaseEntity {
         return new Message(this, sender, uuid, text, product, now);
     }
 
-    /** The send guard: the account must be usable, a participant, and the thread not blocked. */
+    /** La guarda de envío: la cuenta debe estar activa, ser participante y el hilo no estar bloqueado. */
     public void ensureCanSend(UserAccount sender) {
         sender.ensureActive();
         requireParticipant(sender);
@@ -115,7 +115,7 @@ public class Conversation extends BaseEntity {
         }
     }
 
-    /** The contract answers 404 here, so an outsider cannot tell the conversation exists. */
+    /** El contrato responde 404 aquí, para que un ajeno no pueda saber que la conversación existe. */
     public void unblock(UserAccount actor) {
         actor.ensureActive();
         requireVisibleTo(actor);
@@ -137,19 +137,19 @@ public class Conversation extends BaseEntity {
         }
     }
 
-    /** For reads: an outsider must see the conversation as missing, not as forbidden. */
+    /** Para lecturas: un ajeno debe ver la conversación como inexistente, no como prohibida. */
     public void requireVisibleTo(UserAccount account) {
         if (!isParticipant(account)) {
             throw new NotFoundException();
         }
     }
 
-    /** Name of the other side, as the viewer sees it in the inbox. */
+    /** Nombre de la otra parte, tal como lo ve quien consulta la bandeja. */
     public String counterpartName(UserAccount viewer) {
         return counterpartName(viewer, null);
     }
 
-    /** {@code counterpartFirstName} is only used when the other side has neither alias nor a deleted account. */
+    /** {@code counterpartFirstName} solo se usa cuando la otra parte no tiene alias y su cuenta no está eliminada. */
     public String counterpartName(UserAccount viewer, String counterpartFirstName) {
         if (sameEntity(initiator, viewer)) {
             return business.getName();
@@ -157,7 +157,7 @@ public class Conversation extends BaseEntity {
         return displayedName(initiator.getAlias(), counterpartFirstName, initiator.getStatus());
     }
 
-    /** Same rule for inbox projections, which do not load a {@link Conversation} instance. */
+    /** La misma regla para las proyecciones de bandeja, que no cargan una instancia de {@link Conversation}. */
     public static String counterpartName(long viewerId, long initiatorId, String businessName,
                                          String initiatorAlias, String initiatorFirstName,
                                          AccountStatus initiatorStatus) {

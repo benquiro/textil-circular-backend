@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
 
-/** Response bodies of the metrics panel, as named in the API contract. */
+/** Cuerpos de respuesta del panel de métricas, con los nombres del contrato de la API. */
 final class MetricsDtos {
 
     private MetricsDtos() {

@@ -8,9 +8,9 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * Read-only aggregations behind {@code GET /admin/metrics}. Native SQL because the panel joins
- * accounts, businesses, conversations and analytics events; the labels are the names the app shows.
- * A null filter travels as {@code -1}, which no reference id uses.
+ * Agregaciones de solo lectura detrás de {@code GET /admin/metrics}. SQL nativo porque el panel
+ * une cuentas, negocios, conversaciones y eventos de analítica; las etiquetas son los nombres que
+ * muestra la aplicación. Un filtro nulo viaja como {@code -1}, que ningún id de referencia usa.
  */
 @Repository
 public class MetricsQueries {
@@ -23,7 +23,7 @@ public class MetricsQueries {
         this.em = em;
     }
 
-    /** ACTIVE entrepreneurs with a non-deleted business; a snapshot, so the window does not apply. */
+    /** Emprendedores ACTIVE con un negocio no eliminado; es un conteo puntual, así que la ventana no aplica. */
     public long activeEntrepreneurs(Long regionId, Long serviceId) {
         return number("""
                 select count(distinct u.user_id)
@@ -40,7 +40,7 @@ public class MetricsQueries {
                 """, regionId, serviceId);
     }
 
-    /** ENTREPRENEUR accounts registered in {@code [from, to)}. */
+    /** Cuentas ENTREPRENEUR registradas en {@code [from, to)}. */
     public long newEntrepreneurs(Instant from, Instant to, Long regionId, Long serviceId) {
         Query query = em.createNativeQuery("""
                 select count(*)
@@ -91,7 +91,7 @@ public class MetricsQueries {
         return number(query);
     }
 
-    /** Conversations whose last activity (last message, or creation) falls in the window. */
+    /** Conversaciones cuya última actividad (último mensaje o creación) cae dentro de la ventana. */
     public long conversations(Instant from, Instant to, Long regionId, Long serviceId) {
         Query query = em.createNativeQuery("""
                 select count(*)
@@ -118,7 +118,7 @@ public class MetricsQueries {
         return number(query);
     }
 
-    /** The window's conversations that got an answer from someone other than their initiator. */
+    /** Las conversaciones de la ventana que recibieron una respuesta de alguien distinto de su iniciador. */
     public long effectiveConversations(Instant from, Instant to, Long regionId, Long serviceId) {
         Query query = em.createNativeQuery("""
                 select count(*)
@@ -149,7 +149,7 @@ public class MetricsQueries {
         return number(query);
     }
 
-    /** Every account that registered in the window except administrators; no region or service filter. */
+    /** Toda cuenta registrada en la ventana excepto los administradores; sin filtro de región ni servicio. */
     public long registrations(Instant from, Instant to) {
         Query query = em.createNativeQuery("""
                 select count(*)

@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/** The chat between a customer and a business: inbox, history, sending, read state, blocking and reports. */
+/** El chat entre un cliente y un emprendimiento: bandeja, historial, envío, estado de lectura, bloqueo y reportes. */
 @RestController
 @RequiredArgsConstructor
 class MessagingController {

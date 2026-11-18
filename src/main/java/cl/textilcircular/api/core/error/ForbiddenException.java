@@ -2,7 +2,7 @@ package cl.textilcircular.api.core.error;
 
 import lombok.Getter;
 
-/** A participant check failed, or the state forbids the operation (e.g. a blocked conversation). */
+/** Falló una verificación de participación, o el estado prohíbe la operación (p. ej. una conversación bloqueada). */
 @Getter
 public class ForbiddenException extends DomainException {
 

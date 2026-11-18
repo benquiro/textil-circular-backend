@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Metrics panel for administrators ({@code GET /admin/metrics}). */
+/** Panel de métricas para administradores ({@code GET /admin/metrics}). */
 @RestController
 @RequiredArgsConstructor
 class MetricsController {

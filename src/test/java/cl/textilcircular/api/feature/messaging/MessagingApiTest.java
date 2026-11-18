@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** The chat contract: inbox, history, idempotent send, read state, blocking and reports. */
+/** El contrato del chat: bandeja, historial, envío idempotente, estado de lectura, bloqueo y reportes. */
 @ApiTest
 class MessagingApiTest {
 
@@ -71,7 +71,7 @@ class MessagingApiTest {
         return new Session(created.access(), created.userId(), businessId);
     }
 
-    /** Approves the business directly: the review feature is not part of this slice. */
+    /** Aprueba el negocio directamente: la funcionalidad de revisión no es parte de este alcance. */
     void publish(long businessId) {
         jdbc.update("update business set status = 'APPROVED', approved_at = now() where business_id = ?", businessId);
     }

@@ -12,8 +12,8 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
     Optional<Conversation> findByInitiatorIdAndBusinessId(Long initiatorId, Long businessId);
 
     /**
-     * Conversations where the user is the customer or the business owner, with their last
-     * message and the messages from the other side still unread. Latest activity first.
+     * Conversaciones en las que el usuario es el cliente o el dueño del negocio, con su último
+     * mensaje y los mensajes de la otra parte aún sin leer. La actividad más reciente primero.
      */
     @Query(value = """
             SELECT c.conversation_id AS "conversationId",
@@ -45,7 +45,7 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
             """, nativeQuery = true)
     List<InboxItem> findInbox(Long userId);
 
-    /** Same row as {@link #findInbox} for one conversation, used when opening it. */
+    /** La misma fila que {@link #findInbox} para una conversación, usada al abrirla. */
     @Query(value = """
             SELECT c.conversation_id AS "conversationId",
                    c.business_id     AS "businessId",

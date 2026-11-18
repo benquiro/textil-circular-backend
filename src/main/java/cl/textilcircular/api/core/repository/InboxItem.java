@@ -5,7 +5,7 @@ import cl.textilcircular.api.core.model.messaging.Conversation;
 
 import java.time.Instant;
 
-/** One row of a user's inbox. The API picks the counterpart name from it depending on the viewer. */
+/** Una fila de la bandeja de un usuario. La API toma de aquí el nombre de la contraparte según quién la ve. */
 public interface InboxItem {
 
     Long getConversationId();
@@ -20,13 +20,13 @@ public interface InboxItem {
 
     String getInitiatorAlias();
 
-    /** Fallback shown when the counterpart has no alias; {@code null} when there is no profile. */
+    /** Nombre alternativo que se muestra cuando la contraparte no tiene alias; {@code null} cuando no hay perfil. */
     String getInitiatorFirstName();
 
-    /** Raw status name, so the projection also works with native queries. */
+    /** Nombre crudo del estado, para que la proyección también funcione con consultas nativas. */
     String getInitiatorStatus();
 
-    /** {@code null} for a conversation without messages yet. */
+    /** {@code null} para una conversación aún sin mensajes. */
     String getLastMessage();
 
     Instant getLastMessageAt();
@@ -35,7 +35,7 @@ public interface InboxItem {
 
     long getUnreadCount();
 
-    /** Same rule as {@link Conversation#counterpartName}; kept here for the projection. */
+    /** La misma regla que {@link Conversation#counterpartName}; se mantiene aquí para la proyección. */
     default String counterpartName(long viewerId) {
         AccountStatus status = getInitiatorStatus() == null ? null : AccountStatus.valueOf(getInitiatorStatus());
         return Conversation.counterpartName(viewerId, getInitiatorId(), getBusinessName(), getInitiatorAlias(),

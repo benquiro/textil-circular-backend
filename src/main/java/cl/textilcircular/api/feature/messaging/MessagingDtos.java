@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Request and response bodies of the messaging endpoints, as named in the API contract. */
+/** Cuerpos de petición y respuesta de los endpoints de mensajería, con los nombres del contrato de la API. */
 final class MessagingDtos {
 
     private MessagingDtos() {
@@ -46,7 +46,7 @@ final class MessagingDtos {
         }
     }
 
-    /** {@code message.created} event: the contract's Message plus the name the app shows. */
+    /** Evento {@code message.created}: el Message del contrato más el nombre que muestra la app. */
     record MessageCreated(long id, long conversationId, UUID clientUuid, long senderId, String content,
                           Instant sentAt, Instant readAt, String senderName) {
 
@@ -57,7 +57,7 @@ final class MessagingDtos {
         }
     }
 
-    /** {@code message.read} event. */
+    /** Evento {@code message.read}. */
     record MessageRead(long conversationId, Instant readAt) {
     }
 }

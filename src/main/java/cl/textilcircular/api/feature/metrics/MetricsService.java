@@ -21,7 +21,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
-/** The administrator's panel: real counts from accounts, conversations, businesses and analytics. */
+/** El panel del administrador: conteos reales de cuentas, conversaciones, emprendimientos y analítica. */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -79,7 +79,7 @@ class MetricsService {
         long count(Instant from, Instant to, Long regionId, Long serviceId);
     }
 
-    /** All-time metrics have no previous window, so the contract fixes their previous value at 0. */
+    /** Las métricas de todo el período no tienen ventana anterior, así que el contrato fija su valor anterior en 0. */
     private static long previous(boolean windowed, Instant previousFrom, Instant previousTo,
                                  Long regionId, Long serviceId, WindowedQuery query) {
         return windowed ? query.count(previousFrom, previousTo, regionId, serviceId) : 0;

@@ -169,7 +169,7 @@ class MessagingRepositoriesTest {
         assertThat(reports.findByStatusOrderByCreatedAtAsc(ReportStatus.OPEN, PageRequest.of(0, 10))).contains(first);
 
         first.resolve(data.administrator(), null, NOW);
-        em.flush(); // Hibernate runs inserts before updates; the resolution must land first
+        em.flush(); // Hibernate ejecuta los inserts antes que los updates; la resolución debe aplicarse primero
         ConversationReport second = reports.saveAndFlush(ConversationReport.file(conversation, client, null, ReportReason.SCAM, null, NOW));
         assertThat(second.getId()).isNotNull();
 
