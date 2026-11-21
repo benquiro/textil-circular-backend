@@ -115,3 +115,41 @@ INSERT INTO outreach_content (content_id, author_id, type, title, body, image_ur
     (4, 1, 'EVENT', 'Feria de segunda mano', 'Más de 20 emprendimientos de la región metropolitana.', 'https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?auto=format&fit=crop&w=1000&q=80', '2026-11-14T14:00:00Z', 'Parque Bustamante, Providencia', '2026-09-18T12:00:00Z', '2026-09-18T12:00:00Z', NULL),
     (5, 1, 'TEXT', NULL, 'Este mes sumamos 3 emprendimientos nuevos al directorio. ¡Descúbrelos!', NULL, NULL, NULL, '2026-09-25T12:00:00Z', '2026-09-25T12:00:00Z', NULL)
 ON CONFLICT (content_id) DO NOTHING;
+
+-- Usage events for the admin metrics panel. Occurred_at is relative to now() so the
+-- "last 30/90 days" windows always show data in a fresh dev database. On re-runs the
+-- conflict clause keeps the original rows untouched.
+INSERT INTO analytics_event (event_id, type, actor_user_id, business_id, region_id, commune_id, service_id, search_term, occurred_at) VALUES
+    (1, 'DIRECTORY_SEARCH', 8, NULL, 7, 102, 4, 'arreglo de jeans', now() - interval '1 day'),
+    (2, 'DIRECTORY_SEARCH', 9, NULL, 7, 102, NULL, 'costura Ñuñoa', now() - interval '2 days'),
+    (3, 'DIRECTORY_SEARCH', NULL, NULL, 6, 45, 2, 'bolsos de retazos', now() - interval '4 days'),
+    (4, 'DIRECTORY_SEARCH', 10, NULL, 11, 219, 7, 'ropa de segunda mano', now() - interval '7 days'),
+    (5, 'DIRECTORY_SEARCH', NULL, NULL, 7, NULL, 5, 'parches bordados', now() - interval '10 days'),
+    (6, 'DIRECTORY_SEARCH', 11, NULL, 6, 45, 6, 'chaqueta patchwork', now() - interval '14 days'),
+    (7, 'DIRECTORY_SEARCH', 8, NULL, 11, NULL, 1, 'arriendo vestido de fiesta', now() - interval '18 days'),
+    (8, 'DIRECTORY_SEARCH', NULL, NULL, NULL, NULL, NULL, 'taller de bordado', now() - interval '23 days'),
+    (9, 'DIRECTORY_SEARCH', 9, NULL, 7, 102, 4, 'arreglos de ropa', now() - interval '27 days'),
+    (10, 'DIRECTORY_SEARCH', NULL, NULL, 7, 102, NULL, 'retazos de tela', now() - interval '33 days'),
+    (11, 'DIRECTORY_SEARCH', 10, NULL, 6, 45, 2, 'diseño a pedido', now() - interval '40 days'),
+    (12, 'DIRECTORY_SEARCH', NULL, NULL, 11, 219, 7, 'ropa usada', now() - interval '52 days'),
+    (13, 'DIRECTORY_SEARCH', NULL, NULL, 7, NULL, NULL, 'taller telar', now() - interval '66 days'),
+    (14, 'DIRECTORY_SEARCH', 11, NULL, 6, NULL, NULL, 'moda reciclada', now() - interval '80 days'),
+    (15, 'BUSINESS_VIEW', 8, 1, NULL, NULL, NULL, NULL, now() - interval '1 day'),
+    (16, 'BUSINESS_VIEW', 9, 1, NULL, NULL, NULL, NULL, now() - interval '3 days'),
+    (17, 'BUSINESS_VIEW', NULL, 1, NULL, NULL, NULL, NULL, now() - interval '5 days'),
+    (18, 'BUSINESS_VIEW', 10, 1, NULL, NULL, NULL, NULL, now() - interval '9 days'),
+    (19, 'BUSINESS_VIEW', 11, 1, NULL, NULL, NULL, NULL, now() - interval '13 days'),
+    (20, 'BUSINESS_VIEW', NULL, 1, NULL, NULL, NULL, NULL, now() - interval '19 days'),
+    (21, 'BUSINESS_VIEW', 8, 1, NULL, NULL, NULL, NULL, now() - interval '25 days'),
+    (22, 'BUSINESS_VIEW', NULL, 1, NULL, NULL, NULL, NULL, now() - interval '31 days'),
+    (23, 'BUSINESS_VIEW', 9, 2, NULL, NULL, NULL, NULL, now() - interval '2 days'),
+    (24, 'BUSINESS_VIEW', NULL, 2, NULL, NULL, NULL, NULL, now() - interval '6 days'),
+    (25, 'BUSINESS_VIEW', 10, 2, NULL, NULL, NULL, NULL, now() - interval '11 days'),
+    (26, 'BUSINESS_VIEW', 11, 2, NULL, NULL, NULL, NULL, now() - interval '16 days'),
+    (27, 'BUSINESS_VIEW', NULL, 2, NULL, NULL, NULL, NULL, now() - interval '22 days'),
+    (28, 'BUSINESS_VIEW', 8, 2, NULL, NULL, NULL, NULL, now() - interval '44 days'),
+    (29, 'BUSINESS_VIEW', NULL, 3, NULL, NULL, NULL, NULL, now() - interval '4 days'),
+    (30, 'BUSINESS_VIEW', 8, 3, NULL, NULL, NULL, NULL, now() - interval '8 days'),
+    (31, 'BUSINESS_VIEW', NULL, 3, NULL, NULL, NULL, NULL, now() - interval '15 days'),
+    (32, 'BUSINESS_VIEW', 9, 3, NULL, NULL, NULL, NULL, now() - interval '28 days')
+ON CONFLICT (event_id) DO NOTHING;

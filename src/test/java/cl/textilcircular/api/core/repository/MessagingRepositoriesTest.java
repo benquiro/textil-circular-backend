@@ -16,11 +16,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import static cl.textilcircular.api.support.Fixtures.ENCODER;
 import static cl.textilcircular.api.support.Fixtures.NOW;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -167,11 +169,91 @@ class MessagingRepositoriesTest {
         assertThat(reports.findByStatusOrderByCreatedAtAsc(ReportStatus.OPEN, PageRequest.of(0, 10))).contains(first);
 
         first.resolve(data.administrator(), null, NOW);
-        em.flush(); // Hibernate runs inserts before updates; the resolution must land first
+        em.flush(); // Hibernate ejecuta los inserts antes que los updates; la resolución debe aplicarse primero
         ConversationReport second = reports.saveAndFlush(ConversationReport.file(conversation, client, null, ReportReason.SCAM, null, NOW));
         assertThat(second.getId()).isNotNull();
 
         assertThatThrownBy(() -> reports.saveAndFlush(ConversationReport.file(conversation, client, null, ReportReason.OTHER, null, NOW)))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void catchUpReturnsOnlyMessagesAfterTheGivenId() {
+        Conversation conversation = conversation(client, business);
+        send(conversation, client, "1", NOW);
+        Message second = send(conversation, owner, "2", NOW.plusSeconds(10));
+        send(conversation, client, "3", NOW.plusSeconds(20));
+        data.flushAndClear();
+
+        assertThat(messages.findByConversationIdAndIdGreaterThanOrderBySentAtAscIdAsc(conversation.getId(), second.getId()))
+                .extracting(Message::getContent).containsExactly("3");
+    }
+
+    @Test
+    void inboxItemIsTheSameRowForParticipantsAndInvisibleToOutsiders() {
+        Conversation conversation = conversation(client, business);
+        send(conversation, owner, "Hola", NOW);
+        data.flushAndClear();
+
+        InboxItem forClient = conversations.findInboxItem(conversation.getId(), client.getId()).orElseThrow();
+        assertThat(forClient.getBusinessName()).isEqualTo("Hilos");
+        assertThat(forClient.counterpartName(client.getId())).isEqualTo("Hilos");
+        assertThat(forClient.getUnreadCount()).isEqualTo(1);
+
+        InboxItem forOwner = conversations.findInboxItem(conversation.getId(), owner.getId()).orElseThrow();
+        assertThat(forOwner.getInitiatorAlias()).isEqualTo("Cliente");
+        assertThat(forOwner.counterpartName(owner.getId())).isEqualTo("Cliente");
+        assertThat(forOwner.getUnreadCount()).isZero();
+
+        assertThat(conversations.findInboxItem(conversation.getId(), data.customer().getId())).isEmpty();
+    }
+
+    @Test
+    void inboxCounterpartFallsBackToUsuarioAndNamesDeletedAccounts() {
+        UserAccount noAlias = UserAccount.registerCustomer("sin-alias@b.cl", "Demo1234", "Temporal", ENCODER, NOW);
+        ReflectionTestUtils.setField(noAlias, "alias", null);
+        em.persist(noAlias);
+        Conversation conversation = conversation(noAlias, business);
+        data.flushAndClear();
+
+        InboxItem item = conversations.findInboxItem(conversation.getId(), owner.getId()).orElseThrow();
+        assertThat(item.getInitiatorFirstName()).isNull();
+        assertThat(item.counterpartName(owner.getId())).isEqualTo("Usuario");
+
+        em.find(UserAccount.class, noAlias.getId()).delete(NOW);
+        em.flush();
+        data.flushAndClear();
+
+        InboxItem deleted = conversations.findInboxItem(conversation.getId(), owner.getId()).orElseThrow();
+        assertThat(deleted.getInitiatorStatus()).isEqualTo("DELETED");
+        assertThat(deleted.counterpartName(owner.getId())).isEqualTo("Usuario eliminado");
+    }
+
+    @Test
+    void blockStateIsStoredAndCleared() {
+        Conversation conversation = conversation(client, business);
+        conversation.block(owner, NOW);
+        data.flushAndClear();
+
+        Conversation blocked = conversations.findById(conversation.getId()).orElseThrow();
+        assertThat(blocked.isBlocked()).isTrue();
+        assertThat(blocked.getBlockedAt()).isEqualTo(NOW);
+        assertThat(blocked.getBlockedBy().getId()).isEqualTo(owner.getId());
+
+        blocked.unblock(owner);
+        em.flush();
+        data.flushAndClear();
+
+        assertThat(conversations.findById(conversation.getId()).orElseThrow().isBlocked()).isFalse();
+    }
+
+    @Test
+    void theBlockColumnsAlwaysTravelTogether() {
+        Conversation conversation = conversation(client, business);
+        em.flush();
+        ReflectionTestUtils.setField(conversation, "blockedAt", NOW);
+
+        assertThatThrownBy(() -> conversations.saveAndFlush(conversation))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 }

@@ -32,7 +32,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-/** Maps every failure to the contract's problem body. Domain messages pass through unchanged. */
+/** Mapea cada fallo al cuerpo de problema del contrato. Los mensajes de dominio pasan sin cambios. */
 @Slf4j
 @RestControllerAdvice
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
@@ -66,7 +66,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ForbiddenException.class)
     ProblemDetail forbidden(ForbiddenException e) {
-        return Problems.of(HttpStatus.FORBIDDEN, "FORBIDDEN", e.getMessage());
+        return Problems.of(HttpStatus.FORBIDDEN, e.getCode(), e.getMessage());
     }
 
     @ExceptionHandler(NotFoundException.class)
@@ -80,8 +80,9 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
-     * Unique keys hit by a concurrent request after the service's own check passed. The two the app
-     * has a message for keep their code; only the constraint name is logged, never the offending value.
+     * Claves únicas golpeadas por una petición concurrente después de que la propia verificación
+     * del servicio pasara. Las dos para las que la aplicación tiene mensaje conservan su código;
+     * solo se registra el nombre de la restricción, nunca el valor en conflicto.
      */
     @ExceptionHandler(DataIntegrityViolationException.class)
     ProblemDetail dataIntegrity(DataIntegrityViolationException e) {
@@ -90,6 +91,10 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return switch (constraint == null ? "" : constraint) {
             case "uk_user_account_email" -> conflict(AccountErrors.emailTaken());
             case "uk_entrepreneur_rut" -> conflict(AccountErrors.rutTaken());
+            case "uk_message_client_uuid" -> conflict(new ConflictException("MESSAGE_ID_CONFLICT",
+                    "Ese identificador de mensaje ya fue usado"));
+            case "uk_conversation_report_open" -> conflict(new ConflictException("REPORT_ALREADY_OPEN",
+                    "Ya tienes un reporte abierto en esta conversación"));
             default -> Problems.of(HttpStatus.CONFLICT, "CONFLICT",
                     "Los datos cambiaron mientras guardabas. Inténtalo de nuevo");
         };
@@ -130,15 +135,16 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
-     * How Jackson words a {@code @JsonProperty(required = true)} property left out of a body. Jackson has no
-     * dedicated exception type for it (wrong types raise the same {@link MismatchedInputException}), so the
-     * message is the only signal. ProfileApiTest and AuthApiTest fail if an upgrade rewords it.
+     * Cómo formula Jackson el mensaje de una propiedad {@code @JsonProperty(required = true)}
+     * omitida en un cuerpo. Jackson no tiene un tipo de excepción propio para esto (los tipos
+     * incorrectos lanzan la misma {@link MismatchedInputException}), así que el mensaje es la
+     * única señal. ProfileApiTest y AuthApiTest fallan si una actualización cambia su redacción.
      */
     private static final String JACKSON_MISSING_PROPERTY = "Missing required creator property";
 
     /**
-     * Dotted path of the property a body left out ("business.photoUrl"), when that is the failure. List
-     * indexes are skipped: the contract names a list field without its index.
+     * Ruta con puntos de la propiedad que un cuerpo omitió ("business.photoUrl"), cuando ese es el
+     * fallo. Se omiten los índices de lista: el contrato nombra un campo de lista sin su índice.
      */
     private static Optional<String> missingProperty(Throwable e) {
         for (Throwable cause = e; cause != null; cause = cause.getCause()) {
@@ -153,12 +159,12 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return Optional.empty();
     }
 
-    /** Spring MVC's own errors (404, 405, 415...) get the {@code code} extension too. */
+    /** Los errores propios de Spring MVC (404, 405, 415...) también reciben la extensión {@code code}. */
     @Override
     protected @Nullable ResponseEntity<Object> handleExceptionInternal(
             Exception ex, @Nullable Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
         if (body == null && ex instanceof ErrorResponse error) {
-            // Some handlers (404 for an unknown path) leave the body for the superclass to build.
+            // Algunos manejadores (404 para una ruta desconocida) dejan el cuerpo para que lo construya la superclase.
             body = error.getBody();
         }
         if (body instanceof ProblemDetail problem && (problem.getProperties() == null
