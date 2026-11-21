@@ -1,10 +1,12 @@
 package cl.textilcircular.api.feature.directory;
 
+import cl.textilcircular.api.core.model.account.UserAccount;
 import cl.textilcircular.api.core.model.analytics.AnalyticsEventType;
 import cl.textilcircular.api.core.model.business.Business;
 import cl.textilcircular.api.core.model.product.Product;
 import cl.textilcircular.api.core.model.product.ProductAttributes;
 import cl.textilcircular.api.core.repository.AnalyticsEventRepository;
+import cl.textilcircular.api.core.security.TokenService;
 import cl.textilcircular.api.support.ApiTest;
 import cl.textilcircular.api.support.Fixtures;
 import cl.textilcircular.api.support.PersistedData;
@@ -47,6 +49,8 @@ class DirectoryApiTest {
     AnalyticsEventRepository events;
     @Autowired
     JdbcTemplate jdbc;
+    @Autowired
+    TokenService tokens;
 
     /** Directory searches have no actor, so the truncate of {@code user_account} does not reach them. */
     @AfterEach
@@ -67,12 +71,13 @@ class DirectoryApiTest {
         return mvc.perform(builder);
     }
 
-    String login(Business business) throws Exception {
-        String email = business.getOwner().getAccount().getEmail();
-        String body = mvc.perform(request(HttpMethod.POST, "/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"%s\",\"password\":\"Demo1234\"}".formatted(email)))
-                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-        return JsonPath.read(body, "$.accessToken");
+    /**
+     * Signs the owner in without the login endpoint: {@link PersistedData} hashes passwords with a plain
+     * BCrypt encoder, which the application's delegating encoder cannot read.
+     */
+    String login(Business business) {
+        long accountId = business.getOwner().getAccount().getId();
+        return tx.execute(status -> tokens.issue(em.find(UserAccount.class, accountId), Instant.now()).accessToken());
     }
 
     static Product product(Business business, String title) {
