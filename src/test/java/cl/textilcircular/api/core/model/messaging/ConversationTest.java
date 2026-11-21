@@ -1,6 +1,7 @@
 package cl.textilcircular.api.core.model.messaging;
 
 import cl.textilcircular.api.support.Fixtures;
+import cl.textilcircular.api.core.model.account.AccountStatus;
 import cl.textilcircular.api.core.model.account.Entrepreneur;
 import cl.textilcircular.api.core.model.account.UserAccount;
 import cl.textilcircular.api.core.model.business.Business;
@@ -119,6 +120,62 @@ class ConversationTest {
 
         assertThat(conversation.counterpartName(client)).isEqualTo(business.getName());
         assertThat(conversation.counterpartName(owner.getAccount())).isEqualTo("Cliente");
+    }
+
+    @Test
+    void counterpartUsesTheAliasAndFallsBackToTheFirstNameAndThenToUsuario() {
+        Conversation conversation = Conversation.start(client, business, NOW);
+
+        assertThat(conversation.counterpartName(owner.getAccount(), "Camila")).isEqualTo("Cliente");
+        assertThat(conversation.counterpartName(client, "Ignorado")).isEqualTo(business.getName());
+
+        long viewer = owner.getId();
+        long initiator = client.getId();
+        assertThat(Conversation.counterpartName(viewer, initiator, business.getName(), null, "Camila", AccountStatus.ACTIVE))
+                .isEqualTo("Camila");
+        assertThat(Conversation.counterpartName(viewer, initiator, business.getName(), null, null, AccountStatus.ACTIVE))
+                .isEqualTo("Usuario");
+    }
+
+    @Test
+    void aDeletedCounterpartIsNamedAsDeleted() {
+        Conversation conversation = Conversation.start(client, business, NOW);
+        conversation.getInitiator().delete(NOW);
+
+        assertThat(conversation.counterpartName(owner.getAccount())).isEqualTo("Usuario eliminado");
+    }
+
+    @Test
+    void blockingStopsBothParticipantsFromSendingUntilUnblocked() {
+        Conversation conversation = Conversation.start(client, business, NOW);
+        conversation.block(client, NOW);
+
+        assertThat(conversation.isBlocked()).isTrue();
+        assertThat(conversation.getBlockedBy()).isSameAs(client);
+        assertThatThrownBy(() -> conversation.send(client, UUID.randomUUID(), "Hola", null, NOW))
+                .isInstanceOf(ForbiddenException.class).extracting("code").isEqualTo("CONVERSATION_BLOCKED");
+        assertThatThrownBy(() -> conversation.send(owner.getAccount(), UUID.randomUUID(), "Hola", null, NOW))
+                .isInstanceOf(ForbiddenException.class).extracting("code").isEqualTo("CONVERSATION_BLOCKED");
+
+        conversation.unblock(client);
+        assertThat(conversation.isBlocked()).isFalse();
+        assertThat(conversation.send(client, UUID.randomUUID(), "Hola", null, NOW).getContent()).isEqualTo("Hola");
+    }
+
+    @Test
+    void blockAndUnblockAreIdempotentAndRespectParticipation() {
+        Conversation conversation = Conversation.start(client, business, NOW);
+
+        conversation.block(client, NOW);
+        conversation.block(owner.getAccount(), NOW.plusSeconds(10));
+        assertThat(conversation.getBlockedAt()).isEqualTo(NOW);
+        assertThat(conversation.getBlockedBy()).isSameAs(client);
+        conversation.unblock(owner.getAccount());
+        conversation.unblock(owner.getAccount());
+        assertThat(conversation.isBlocked()).isFalse();
+
+        assertThatThrownBy(() -> conversation.block(customer(), NOW)).isInstanceOf(ForbiddenException.class);
+        assertThatThrownBy(() -> conversation.unblock(customer())).isInstanceOf(NotFoundException.class);
     }
 
     @Test

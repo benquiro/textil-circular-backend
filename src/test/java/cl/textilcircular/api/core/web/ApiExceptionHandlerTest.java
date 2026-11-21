@@ -25,6 +25,12 @@ class ApiExceptionHandlerTest {
     }
 
     @Test
+    void duplicated_messages_and_open_reports_keep_the_contract_code() {
+        assertThat(violationOf("uk_message_client_uuid").getProperties()).containsEntry("code", "MESSAGE_ID_CONFLICT");
+        assertThat(violationOf("uk_conversation_report_open").getProperties()).containsEntry("code", "REPORT_ALREADY_OPEN");
+    }
+
+    @Test
     void any_other_constraint_stays_a_generic_conflict() {
         ProblemDetail problem = violationOf("uk_refresh_token_hash");
         assertThat(problem.getStatus()).isEqualTo(409);
