@@ -2,6 +2,7 @@ package cl.textilcircular.api.core.model.product;
 
 import cl.textilcircular.api.core.model.account.UserAccount;
 import cl.textilcircular.api.core.model.business.Business;
+import cl.textilcircular.api.core.model.reference.TextileService;
 import cl.textilcircular.api.core.error.ConflictException;
 import cl.textilcircular.api.core.error.ForbiddenException;
 import cl.textilcircular.api.core.error.ValidationException;
@@ -54,6 +55,13 @@ public class Product extends AuditedEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "business_id", nullable = false, updatable = false)
     private Business business;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "service_id")
+    private TextileService service;
+
+    /** Selected service must already have been checked against the business services by the caller. */
+    public void assignService(TextileService service) { this.service = service; }
 
     @Column(nullable = false, length = Validators.PRODUCT_TITLE_MAX)
     private String title;
