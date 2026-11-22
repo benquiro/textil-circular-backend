@@ -74,6 +74,27 @@ class AuthApiTest {
     }
 
     @Test
+    void auth_endpoints_ignore_a_dead_access_token() throws Exception {
+        post("/auth/register/customer", CUSTOMER).andExpect(status().isCreated());
+        var login = post("/auth/login", """
+                {"email":"cami@demo.cl","password":"Secreta123"}""").andExpect(status().isOk());
+        String access = read(login, "$.accessToken");
+        String refresh = read(login, "$.refreshToken");
+        String rotated = read(post("/auth/refresh", "{\"refreshToken\":\"" + refresh + "\"}")
+                .andExpect(status().isOk()), "$.refreshToken");
+
+        // `access` belongs to the session rotated above, so it is dead; the contract has no auth on /auth/**.
+        String again = read(withBearer("/auth/refresh", access, rotated).andExpect(status().isOk()), "$.refreshToken");
+        withBearer("/auth/logout", access, again).andExpect(status().isNoContent());
+    }
+
+    ResultActions withBearer(String path, String access, String refresh) throws Exception {
+        return mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/v1" + path)
+                .header("Authorization", "Bearer " + access)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"refreshToken\":\"" + refresh + "\"}"));
+    }
+
+    @Test
     void invalid_sign_up_names_the_field() throws Exception {
         post("/auth/register/customer", """
                 {"email":"cami@demo.cl","password":"corta","alias":"Cami"}""")

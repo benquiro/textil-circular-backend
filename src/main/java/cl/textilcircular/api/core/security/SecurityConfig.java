@@ -24,6 +24,7 @@ import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
 import org.springframework.security.web.SecurityFilterChain;
 
 import javax.crypto.SecretKey;
@@ -54,6 +55,8 @@ public class SecurityConfig {
         authentication.setJwtGrantedAuthoritiesConverter(jwt ->
                 List.of(new SimpleGrantedAuthority("ROLE_" + jwt.getClaimAsString(TokenService.ROLE_CLAIM))));
 
+        DefaultBearerTokenResolver defaultResolver = new DefaultBearerTokenResolver();
+
         http.csrf(csrf -> csrf.disable())
                 .httpBasic(basic -> basic.disable())
                 .formLogin(form -> form.disable())
@@ -81,6 +84,9 @@ public class SecurityConfig {
                                 "/swagger-ui.html", "/error").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth -> oauth
+                        // /auth/** has no auth in the contract: a stale token the app still sends must not turn into a 401.
+                        .bearerTokenResolver(request -> request.getRequestURI().startsWith(API_BASE_PATH + "/auth/")
+                                ? null : defaultResolver.resolve(request))
                         .jwt(jwt -> jwt.decoder(jwtDecoder).jwtAuthenticationConverter(authentication))
                         .authenticationEntryPoint((request, response, e) -> {
                             response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer");
