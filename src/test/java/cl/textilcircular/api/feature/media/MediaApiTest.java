@@ -95,12 +95,40 @@ class MediaApiTest {
     }
 
     @Test
-    void rejects_an_image_over_5_mb() throws Exception {
-        byte[] big = new byte[5 * 1024 * 1024 + 1];
-        System.arraycopy(PNG, 0, big, 0, PNG.length);
-        mvc.perform(upload("image/png", big, token))
+    void rejects_an_image_over_5_mb_and_stores_nothing() throws Exception {
+        mvc.perform(upload("image/png", pngOfSize(5 * 1024 * 1024 + 1), token))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors[0].field").value("file"));
+                .andExpect(jsonPath("$.code").value("VALIDATION"))
+                .andExpect(jsonPath("$.errors[0].field").value("file"))
+                .andExpect(jsonPath("$.errors[0].message").value("La imagen no puede superar 5 MB"));
+        assertThat(files.count()).isZero();
+    }
+
+    @Test
+    void accepts_an_image_of_exactly_5_mb() throws Exception {
+        mvc.perform(upload("image/png", pngOfSize(5 * 1024 * 1024), token)).andExpect(status().isCreated());
+        assertThat(files.count()).isEqualTo(1);
+    }
+
+    @Test
+    void an_empty_file_is_reported_as_empty() throws Exception {
+        mvc.perform(upload("image/png", new byte[0], token))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].message").value("La imagen está vacía"));
+    }
+
+    @Test
+    void the_whole_png_signature_is_checked_and_a_bare_signature_is_enough() throws Exception {
+        byte[] jpegLooksLikePng = PNG.clone();
+        jpegLooksLikePng[5] = 0; // only the last 4 signature bytes differ
+        mvc.perform(upload("image/png", jpegLooksLikePng, token)).andExpect(status().isBadRequest());
+        mvc.perform(upload("image/png", java.util.Arrays.copyOf(PNG, 8), token)).andExpect(status().isCreated());
+    }
+
+    private static byte[] pngOfSize(int size) {
+        byte[] bytes = new byte[size];
+        System.arraycopy(PNG, 0, bytes, 0, PNG.length);
+        return bytes;
     }
 
     @Test

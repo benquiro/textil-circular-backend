@@ -8,9 +8,12 @@ import cl.textilcircular.api.core.error.ValidationException;
 import cl.textilcircular.api.core.security.Caller;
 import cl.textilcircular.api.core.web.MediaUrls;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -20,6 +23,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 
 /** Simulated object storage: bytes go to local disk ({@code app.media.dir}), metadata to {@code media_file}. */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 class MediaService {
@@ -34,7 +38,10 @@ class MediaService {
     @Value("${app.media.dir:media-storage}")
     private Path dir;
 
-    /** Row first: if writing the file fails, the transaction rolls the row back. */
+    /**
+     * Row first: if writing the file fails, the transaction rolls the row back. The file is deleted whenever
+     * the transaction does not commit (failed write, failed commit), so no row and no file outlive each other.
+     */
     @Transactional
     Uploaded upload(Caller caller, MultipartFile file) {
         byte[] bytes;
@@ -49,9 +56,22 @@ class MediaService {
             throw new ValidationException("file", "El contenido no corresponde a una imagen " + stored.getContentType());
         }
         files.saveAndFlush(stored);
+        Path target = dir.resolve(stored.getStoragePath());
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status != STATUS_COMMITTED) {
+                    try {
+                        Files.deleteIfExists(target);
+                    } catch (IOException e) {
+                        log.warn("Could not remove the orphan file {}", target, e);
+                    }
+                }
+            }
+        });
         try {
             Files.createDirectories(dir);
-            Files.write(dir.resolve(stored.getStoragePath()), bytes);
+            Files.write(target, bytes);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -61,11 +81,23 @@ class MediaService {
     /** The declared type is client-controlled, so the file signature must agree with it. */
     private static boolean matchesType(String type, byte[] b) {
         return switch (type) {
-            case "image/jpeg" -> b.length > 3 && (b[0] & 0xFF) == 0xFF && (b[1] & 0xFF) == 0xD8 && (b[2] & 0xFF) == 0xFF;
-            case "image/png" -> b.length > 8 && (b[0] & 0xFF) == 0x89 && b[1] == 'P' && b[2] == 'N' && b[3] == 'G';
-            case "image/webp" -> b.length > 12 && b[0] == 'R' && b[1] == 'I' && b[2] == 'F' && b[3] == 'F'
+            case "image/jpeg" -> startsWith(b, 0xFF, 0xD8, 0xFF);
+            case "image/png" -> startsWith(b, 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A);
+            case "image/webp" -> startsWith(b, 'R', 'I', 'F', 'F') && b.length >= 12
                     && b[8] == 'W' && b[9] == 'E' && b[10] == 'B' && b[11] == 'P';
             default -> false;
         };
+    }
+
+    private static boolean startsWith(byte[] b, int... signature) {
+        if (b.length < signature.length) {
+            return false;
+        }
+        for (int i = 0; i < signature.length; i++) {
+            if ((b[i] & 0xFF) != signature[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 }
