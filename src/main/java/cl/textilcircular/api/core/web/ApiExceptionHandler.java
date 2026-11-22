@@ -25,6 +25,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import tools.jackson.databind.exc.MismatchedInputException;
 
@@ -123,6 +125,20 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     ProblemDetail unexpected(Exception e) {
         log.error("Unexpected error", e);
         return Problems.of(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "Algo salió mal. Inténtalo de nuevo");
+    }
+
+    @Override
+    protected @Nullable ResponseEntity<Object> handleMissingServletRequestPart(
+            MissingServletRequestPartException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        return handleExceptionInternal(ex, Problems.validation(ex.getRequestPartName(), "Falta este campo"),
+                headers, HttpStatus.BAD_REQUEST, request);
+    }
+
+    @Override
+    protected @Nullable ResponseEntity<Object> handleMaxUploadSizeExceededException(
+            MaxUploadSizeExceededException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        return handleExceptionInternal(ex, Problems.validation("file", "La imagen no puede superar 5 MB"),
+                headers, HttpStatus.BAD_REQUEST, request);
     }
 
     @Override

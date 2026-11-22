@@ -77,3 +77,5 @@ Los tests corren contra un contenedor real de PostgreSQL 18 (Testcontainers), co
 - Los DTOs de petición y respuesta usan `Instant` (u `OffsetDateTime`) para fechas con hora, nunca
   `LocalDateTime`, porque la app Android las lee con `OffsetDateTime.parse` y necesita el desfase horario.
 - Las URLs de imágenes que devuelve la API son siempre absolutas.
+- Las imágenes subidas con `POST /media` se guardan en disco, en la carpeta `app.media.dir` (por defecto
+  `media-storage/`, ignorada por git), y se sirven sin sesión desde `GET /media/<archivo>`.

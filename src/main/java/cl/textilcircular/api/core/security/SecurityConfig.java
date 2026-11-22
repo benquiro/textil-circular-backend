@@ -70,6 +70,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, API_BASE_PATH + "/businesses", API_BASE_PATH + "/businesses/*",
                                 API_BASE_PATH + "/products/*").permitAll()
                         .requestMatchers(HttpMethod.POST, API_BASE_PATH + "/businesses/*/contact-clicks").permitAll()
+                        // Uploaded images are plain links the app loads without a token.
+                        .requestMatchers(HttpMethod.GET, "/media/*").permitAll()
                         .requestMatchers(API_BASE_PATH + "/admin/**").hasRole("ADMINISTRATOR")
                         // Rules that depend only on the role live here; those that need data (owner, participant) in the services.
                         .requestMatchers(HttpMethod.POST, API_BASE_PATH + "/contents").hasRole("ADMINISTRATOR")
