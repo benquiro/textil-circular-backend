@@ -14,6 +14,11 @@ spring:
         order_updates: true
   flyway:
     locations: classpath:db/migration
+  servlet:
+    multipart:
+      # The 5 MB image limit is enforced by MediaFile; the request limit leaves room for the form framing.
+      max-file-size: 5MB
+      max-request-size: 6MB
 logging:
   level:
     # At WARN Hibernate prints the whole failed INSERT, personal data included; the API handler logs the constraint name instead.
