@@ -9,6 +9,8 @@ RUN ./mvnw -q -B package -DskipTests && cp target/api-*.jar app.jar
 
 FROM eclipse-temurin:25-jre
 WORKDIR /app
+# curl backs the ECS container health check on /actuator/health.
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 RUN useradd --system --uid 10001 app && mkdir media-storage && chown app media-storage
 COPY --from=build /src/app.jar app.jar
 USER app
